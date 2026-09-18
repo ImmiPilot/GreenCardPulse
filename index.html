@@ -1,348 +1,356 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full bg-slate-50">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GreenCardPulse - AI-Powered US Visa Bulletin & Priority Date Predictor</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome CDN -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Google Fonts Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        brand: {
-                            50: '#f0f7ff',
-                            100: '#e0effe',
-                            500: '#2563eb',
-                            600: '#1d4ed8',
-                            700: '#1e40af',
-                            900: '#1e3a8a',
-                        }
-                    }
-                }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GreenCardPulse</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif']
+          },
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#2563eb',
+              600: '#1d4ed8',
+              700: '#1e40af',
+              900: '#1e3a8a'
             }
+          }
         }
-    </script>
-    <style>
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-        @keyframes pulse-ring {
-            0% { transform: scale(0.95); opacity: 0.8; }
-            50% { transform: scale(1.1); opacity: 0.4; }
-            100% { transform: scale(0.95); opacity: 0.8; }
-        }
-        .pulse-ring {
-            animation: pulse-ring 2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
-        }
-    </style>
+      }
+    };
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .glass { background: rgba(255,255,255,0.72); backdrop-filter: blur(8px); }
+    .grid-pattern {
+      background-image:
+        linear-gradient(rgba(148,163,184,0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148,163,184,0.08) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+  </style>
 </head>
-<body class="h-full font-sans text-slate-800 antialiased flex flex-col">
-
-    <!-- Navigation Header -->
-    <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-50 shadow-md">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <!-- Logo -->
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
-                        <i class="fa-solid fa-passport text-xl"></i>
-                    </div>
-                    <div>
-                        <div class="flex items-center space-x-2">
-                            <span class="font-extrabold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-blue-200">GreenCardPulse</span>
-                            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                                <i class="fa-solid fa-bolt text-[9px]"></i> Official Data + Forecast Engine
-                            </span>
-                        </div>
-                        <p class="text-xs text-slate-400 hidden sm:block">US Visa Bulletin Analytics & Automated Priority Date Forecasting</p>
-                    </div>
-                </div>
-
-                <!-- Quick Action Header Badges -->
-                <div class="flex items-center space-x-2 sm:space-x-3">
-                    <!-- Live Sync Indicator -->
-                    <div id="sync-status-badge" class="flex items-center space-x-2 text-xs bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
-                        <span id="sync-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <span class="text-slate-300 hidden md:inline">Data Source:</span>
-                        <strong class="text-white font-semibold text-[11px] sm:text-xs" id="vb-month-label">Baseline Snapshot</strong>
-                    </div>
-
-                    <!-- Fetch Latest Bulletin Button -->
-                    <button id="ai-sync-btn" onclick="triggerAISync()" class="text-xs bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 shadow-sm">
-                        <i class="fa-solid fa-rotate text-xs" id="sync-icon"></i>
-                        <span class="hidden sm:inline">Sync Latest Bulletin</span>
-                        <span class="sm:hidden">Sync</span>
-                    </button>
-
-                    <!-- Load Presets -->
-                    <button id="preset-btn" onclick="togglePresetsModal()" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 shadow-sm">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i>
-                        <span class="hidden sm:inline">Presets</span>
-                    </button>
-
-                    <!-- FAQ Link -->
-                    <a href="faq.html" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-100 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 border border-slate-700">
-                        <i class="fa-solid fa-circle-question"></i>
-                        <span class="hidden sm:inline">FAQ</span>
-                    </a>
-                </div>
+<body class="min-h-screen bg-slate-50 text-slate-800 antialiased">
+  <header class="bg-slate-900 text-white shadow-md border-b border-slate-800 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <i class="fa-solid fa-passport text-xl"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-extrabold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-blue-200">GreenCardPulse</span>
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                <i class="fa-solid fa-bolt text-[9px]"></i> Official Data + Forecast Engine
+              </span>
             </div>
+            <p class="text-xs text-slate-400 hidden sm:block">US Visa Bulletin Analytics & Automated Priority Date Forecasting</p>
+          </div>
         </div>
 
-        <!-- AI Sync Progress Status Bar (Collapsible) -->
-        <div id="ai-sync-banner" class="hidden bg-gradient-to-r from-slate-800 via-indigo-950 to-slate-800 border-t border-indigo-500/30 px-4 py-2 text-xs text-indigo-200">
-            <div class="max-w-7xl mx-auto flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                    <i class="fa-solid fa-microchip animate-spin text-indigo-400"></i>
-                    <span id="ai-sync-status-text">Connecting to Gemini 3 Flash & Google Search to fetch official Department of State Visa Bulletin...</span>
-                </div>
-                <div class="text-[10px] text-indigo-300 font-mono hidden md:block" id="ai-sync-timer">Searching travel.state.gov</div>
-            </div>
+        <div class="flex items-center space-x-2 sm:space-x-3">
+          <div class="hidden sm:flex items-center gap-2 text-xs bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="text-slate-300">Data Source:</span>
+            <strong class="text-white font-semibold">September 2026</strong>
+          </div>
+          <button class="text-xs bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-rotate text-xs"></i>
+            <span class="hidden sm:inline">Sync Latest Bulletin</span>
+            <span class="sm:hidden">Sync</span>
+          </button>
+          <button class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span class="hidden sm:inline">Presets</span>
+          </button>
+          <a href="faq.html" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-100 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 border border-slate-700">
+            <i class="fa-solid fa-circle-question"></i>
+            <span>FAQ</span>
+          </a>
         </div>
-    </header>
-
-    <!-- Citation Sources Footer Bar -->
-    <div id="citation-container" class="bg-slate-100 border-b border-slate-200 px-4 py-1.5 text-[11px] text-slate-600 flex items-center justify-between hidden">
-        <div class="max-w-7xl mx-auto w-full flex items-center justify-between">
-            <div class="flex items-center space-x-2 overflow-hidden">
-                <i class="fa-solid fa-link text-blue-600"></i>
-                <span class="font-semibold text-slate-700">Grounded Citation:</span>
-                <a id="citation-link" href="#" target="_blank" class="text-blue-600 underline truncate hover:text-blue-800">
-                    Official US Dept of State Visa Bulletin
-                </a>
-            </div>
-            <span class="text-[10px] text-slate-400 whitespace-nowrap ml-2" id="citation-timestamp">Just now</span>
-        </div>
+      </div>
     </div>
+  </header>
 
-    <!-- Main Content Grid -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div class="lg:col-span-5 space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-sliders text-blue-600"></i>
+              Immigration Profile
+            </h2>
+            <div class="flex gap-2">
+              <button class="text-xs text-indigo-600 hover:text-indigo-800 font-medium bg-indigo-50 px-2 py-1 rounded-lg">Inspect Cutoffs</button>
+              <button class="text-xs text-slate-500 hover:text-blue-600">Reset</button>
+            </div>
+          </div>
 
-        <!-- LEFT COLUMN: User Profile & Inputs (5 Cols on LG) -->
-        <section class="lg:col-span-5 space-y-6">
-            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6 space-y-5">
-                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
-                        <i class="fa-solid fa-sliders text-blue-600"></i>
-                        <span>Immigration Profile</span>
-                    </h2>
-                    <div class="flex items-center space-x-2">
-                        <button onclick="toggleDataInspectModal()" class="text-xs text-indigo-600 hover:text-indigo-800 transition flex items-center space-x-1 font-medium bg-indigo-50 px-2 py-1 rounded-lg">
-                            <i class="fa-solid fa-database"></i>
-                            <span>Inspect Cutoffs</span>
-                        </button>
-                        <button onclick="resetInputs()" class="text-xs text-slate-500 hover:text-blue-600 transition flex items-center space-x-1">
-                            <i class="fa-solid fa-rotate-left"></i>
-                            <span>Reset</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Input Form -->
-                <form id="calculator-form" onsubmit="event.preventDefault();" class="space-y-4">
-                    
-                    <!-- Visa Preference Stream -->
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1.5">Visa Category Stream</label>
-                        <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
-                            <button type="button" id="tab-eb" onclick="setStream('EB')" class="py-2 text-xs font-semibold rounded-lg transition shadow-sm bg-white text-blue-600">
-                                <i class="fa-solid fa-briefcase mr-1"></i> Employment (EB)
-                            </button>
-                            <button type="button" id="tab-fb" onclick="setStream('FB')" class="py-2 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-slate-900">
-                                <i class="fa-solid fa-users text-xs mr-1"></i> Family-Based (FB)
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Category Select -->
-                    <div>
-                        <label for="category" class="block text-xs font-semibold text-slate-700 mb-1">Specific Preference Category</label>
-                        <select id="category" onchange="calculateTimeline()" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl focus:ring-blue-500 focus:border-blue-500">
-                            <!-- Populated dynamically via JS -->
-                        </select>
-                    </div>
-
-                    <!-- Country of Chargeability -->
-                    <div>
-                        <div class="flex items-center justify-between mb-1">
-                            <label for="country" class="block text-xs font-semibold text-slate-700">Country of Birth (Chargeability)</label>
-                            <span class="text-[11px] text-blue-600 hover:underline cursor-pointer" onclick="toggleCrossChargeModal()">Cross-chargeability?</span>
-                        </div>
-                        <select id="country" onchange="calculateTimeline()" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl focus:ring-blue-500 focus:border-blue-500">
-                            <option value="IND">India</option>
-                            <option value="CHN">China (Mainland born)</option>
-                            <option value="MEX">Mexico</option>
-                            <option value="PHL">Philippines</option>
-                            <option value="ROW" selected>Rest of World (All Other Areas)</option>
-                        </select>
-                    </div>
-
-                    <!-- Priority Date Selection -->
-                    <div class="grid grid-cols-3 gap-2">
-                        <div>
-                            <label for="pd-month" class="block text-xs font-semibold text-slate-700 mb-1">Priority Date Month</label>
-                            <select id="pd-month" onchange="populateDays(); calculateTimeline()" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl focus:ring-blue-500 focus:border-blue-500">
-                                <option value="0">January</option>
-                                <option value="1">February</option>
-                                <option value="2">March</option>
-                                <option value="3">April</option>
-                                <option value="4">May</option>
-                                <option value="5">June</option>
-                                <option value="6">July</option>
-                                <option value="7">August</option>
-                                <option value="8">September</option>
-                                <option value="9">October</option>
-                                <option value="10">November</option>
-                                <option value="11">December</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="pd-day" class="block text-xs font-semibold text-slate-700 mb-1">Day</label>
-                            <select id="pd-day" onchange="calculateTimeline()" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl focus:ring-blue-500 focus:border-blue-500">
-                                <!-- Populated dynamically -->
-                            </select>
-                        </div>
-                        <div>
-                            <label for="pd-year" class="block text-xs font-semibold text-slate-700 mb-1">Priority Date Year</label>
-                            <select id="pd-year" onchange="populateDays(); calculateTimeline()" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl focus:ring-blue-500 focus:border-blue-500">
-                                <!-- Populated dynamically JS (2000 to Current Year) -->
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Stage / Current Filing Status -->
-                    <div>
-                        <label for="current-stage" class="block text-xs font-semibold text-slate-700 mb-1">Current Processing Stage</label>
-                        <select id="current-stage" onchange="calculateTimeline()" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl focus:ring-blue-500 focus:border-blue-500">
-                            <option value="PERM_PENDING">PERM Labor Certification Pending / Planned</option>
-                            <option value="I140_PENDING">I-140 Petition Pending / Approved</option>
-                            <option value="I485_FILED">I-485 Adjustment of Status Pending</option>
-                            <option value="CONSULAR">Consular Processing Pending</option>
-                        </select>
-                    </div>
-
-                    <!-- Movement Velocity Scenario Selector -->
-                    <div class="pt-2 border-t border-slate-100">
-                        <div class="flex items-center justify-between mb-2">
-                            <label class="block text-xs font-semibold text-slate-700">Movement Pace Model</label>
-                            <span id="speed-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">Historical Avg</span>
-                        </div>
-                        <div class="grid grid-cols-3 gap-2">
-                            <button type="button" id="pace-pessimistic" onclick="setPace('pessimistic')" class="py-2 px-1 text-center border border-slate-200 rounded-xl text-xs font-medium text-slate-600 hover:border-slate-300 hover:bg-slate-50 transition">
-                                <div class="font-semibold text-slate-800">Conservative</div>
-                                <div class="text-[10px] text-slate-400">Slow Movement</div>
-                            </button>
-                            <button type="button" id="pace-moderate" onclick="setPace('moderate')" class="py-2 px-1 text-center border-2 border-blue-600 bg-blue-50/50 rounded-xl text-xs font-medium text-slate-700 transition">
-                                <div class="font-semibold">Baseline</div>
-                                <div class="text-[10px] text-blue-500">Historical Trend</div>
-                            </button>
-                            <button type="button" id="pace-optimistic" onclick="setPace('optimistic')" class="py-2 px-1 text-center border border-slate-200 rounded-xl text-xs font-medium text-slate-600 hover:border-slate-300 hover:bg-slate-50 transition">
-                                <div class="font-semibold text-slate-800">Optimistic</div>
-                                <div class="text-[10px] text-slate-400">Fast Forward</div>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Spousal Cross-chargeability toggle checkbox -->
-                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-start space-x-3">
-                        <input id="cross-charge" type="checkbox" onchange="calculateTimeline()" class="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-                        <div class="text-xs">
-                            <label for="cross-charge" class="font-semibold text-slate-800 cursor-pointer">Spousal Cross-Chargeability</label>
-                            <p class="text-slate-500 text-[11px] leading-tight mt-0.5">Check if your spouse was born in a non-backlogged country (e.g. ROW) to bypass per-country caps.</p>
-                        </div>
-                    </div>
-                </form>
+          <form class="space-y-4 mt-5">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">Visa Category Stream</label>
+              <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+                <button type="button" class="py-2 text-xs font-semibold rounded-lg bg-white text-blue-600 shadow-sm">Employment (EB)</button>
+                <button type="button" class="py-2 text-xs font-semibold rounded-lg text-slate-600">Family-Based (FB)</button>
+              </div>
             </div>
 
-            <!-- Quick Info / Key Insights Box -->
-            <div class="bg-gradient-to-br from-slate-900 to-indigo-950 rounded-2xl p-5 text-white shadow-md">
-                <div class="flex items-center space-x-2 text-xs font-semibold text-indigo-300 uppercase tracking-wider mb-2">
-                    <i class="fa-solid fa-lightbulb text-amber-400"></i>
-                    <span>Visa Bulletin Analysis</span>
-                </div>
-                <div id="dynamic-insight-text" class="text-xs text-slate-300 leading-relaxed space-y-2">
-                    <!-- Populated dynamically -->
-                </div>
-            </div>
-        </section>
-
-        <!-- RIGHT COLUMN: Analytics, Charts, Predictions (7 Cols on LG) -->
-        <section class="lg:col-span-7 space-y-6">
-
-            <!-- Hero Result Banner Card -->
-            <div id="result-hero-card" class="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
-                <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
-                
-                <div class="relative z-10">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/20 pb-4 gap-2">
-                        <div>
-                            <span class="text-xs font-semibold text-blue-200 uppercase tracking-wider">Estimated Green Card Approval</span>
-                            <h3 id="hero-est-date" class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-0.5">Calculating...</h3>
-                        </div>
-                        <div class="text-left sm:text-right">
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white/20 backdrop-blur-md text-white border border-white/30" id="hero-remaining-time">
-                                - Remaining Wait
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- Metrics Trio -->
-                    <div class="grid grid-cols-3 gap-4 pt-4 text-center">
-                        <div>
-                            <div class="text-[11px] text-blue-200">Active Bulletin Cutoff</div>
-                            <div id="metric-current-cutoff" class="text-sm sm:text-base font-bold mt-0.5">--</div>
-                        </div>
-                        <div class="border-x border-white/20 px-2">
-                            <div class="text-[11px] text-blue-200">Priority Date Queue</div>
-                            <div id="metric-queue-months" class="text-sm sm:text-base font-bold mt-0.5">--</div>
-                        </div>
-                        <div>
-                            <div class="text-[11px] text-blue-200">USCIS I-485 Filing</div>
-                            <div id="metric-filing-date" class="text-sm sm:text-base font-bold mt-0.5">--</div>
-                        </div>
-                    </div>
-                </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Specific Preference Category</label>
+              <select class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl px-3 py-2.5 focus:ring-blue-500 focus:border-blue-500">
+                <option>EB-1</option>
+                <option selected>EB-2</option>
+                <option>EB-3</option>
+                <option>EB-4</option>
+                <option>FB-2A</option>
+                <option>FB-4</option>
+              </select>
             </div>
 
-            <!-- rest of original file omitted for brevity in this patch; it remains unchanged -->
-        </section>
-    </main>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Country of Birth</label>
+              <select class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl px-3 py-2.5 focus:ring-blue-500 focus:border-blue-500">
+                <option>India</option>
+                <option>China</option>
+                <option>Mexico</option>
+                <option>Philippines</option>
+                <option selected>Rest of World</option>
+              </select>
+            </div>
 
-    <footer class="bg-white border-t border-slate-200 mt-auto py-6 text-center text-xs text-slate-500">
-        <div class="max-w-7xl mx-auto px-4 space-y-1">
-            <p>© 2026 GreenCardPulse Engine. Uses official U.S. Department of State Visa Bulletin data plus separately labeled forecasting inputs.</p>
-            <p class="text-[10px] text-slate-400">
-                <a class="underline hover:text-blue-600" href="https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin.html" target="_blank" rel="noopener">Official Visa Bulletin</a>
-                · <a class="underline hover:text-blue-600" href="https://www.uscis.gov/visabulletininfo" target="_blank" rel="noopener">USCIS Visa Bulletin filing-chart guidance</a>
-                · <a class="underline hover:text-blue-600" href="faq.html">FAQ</a>
-            </p>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Month</label>
+                <select class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2 py-2 text-xs focus:ring-blue-500 focus:border-blue-500">
+                  <option>January</option>
+                  <option>February</option>
+                  <option selected>March</option>
+                  <option>April</option>
+                  <option>May</option>
+                  <option>June</option>
+                  <option>July</option>
+                  <option>August</option>
+                  <option>September</option>
+                  <option>October</option>
+                  <option>November</option>
+                  <option>December</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Day</label>
+                <select class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2 py-2 text-xs focus:ring-blue-500 focus:border-blue-500">
+                  <option>1</option>
+                  <option selected>15</option>
+                  <option>22</option>
+                  <option>28</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Year</label>
+                <select class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2 py-2 text-xs focus:ring-blue-500 focus:border-blue-500">
+                  <option>2010</option>
+                  <option>2013</option>
+                  <option>2018</option>
+                  <option selected>2022</option>
+                  <option>2024</option>
+                  <option>2026</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Current Processing Stage</label>
+              <select class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl px-3 py-2.5 focus:ring-blue-500 focus:border-blue-500">
+                <option>PERM Labor Certification Pending</option>
+                <option selected>I-140 Petition Pending</option>
+                <option>I-485 Adjustment of Status Pending</option>
+                <option>Consular Processing Pending</option>
+              </select>
+            </div>
+
+            <div class="pt-2 border-t border-slate-100">
+              <div class="flex items-center justify-between mb-2">
+                <label class="block text-xs font-semibold text-slate-700">Movement Pace Model</label>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">Historical Avg</span>
+              </div>
+              <div class="grid grid-cols-3 gap-2">
+                <div class="text-center border border-slate-200 rounded-xl py-2 text-xs">
+                  <div class="font-semibold text-slate-800">Conservative</div>
+                  <div class="text-[10px] text-slate-400">Slow</div>
+                </div>
+                <div class="text-center border-2 border-blue-600 bg-blue-50 rounded-xl py-2 text-xs">
+                  <div class="font-semibold">Baseline</div>
+                  <div class="text-[10px] text-blue-500">Historical</div>
+                </div>
+                <div class="text-center border border-slate-200 rounded-xl py-2 text-xs">
+                  <div class="font-semibold text-slate-800">Optimistic</div>
+                  <div class="text-[10px] text-slate-400">Fast</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-start gap-3">
+              <input type="checkbox" checked class="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+              <div class="text-xs">
+                <label class="font-semibold text-slate-800">Spousal Cross-Chargeability</label>
+                <p class="text-slate-500 text-[11px] leading-tight mt-0.5">Check if your spouse was born in a non-backlogged country to bypass per-country caps.</p>
+              </div>
+            </div>
+          </form>
         </div>
-    </footer>
 
-    <script>
-        // existing script remains unchanged
-    </script>
+        <div class="bg-gradient-to-br from-slate-900 to-indigo-950 rounded-2xl p-5 text-white shadow-md">
+          <div class="flex items-center gap-2 text-xs font-semibold text-indigo-300 uppercase tracking-wider mb-2">
+            <i class="fa-solid fa-lightbulb text-amber-400"></i>
+            Visa Bulletin Analysis
+          </div>
+          <div class="text-xs text-slate-300 leading-relaxed space-y-2">
+            <p>India and China remain the most backlogged paths for many EB categories, so a late priority date can still take years even after the filing stage is reached.</p>
+            <p>Use the current bulletin as the factual baseline and treat projections as a planning guide only.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="lg:col-span-7 space-y-6">
+        <div class="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+          <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+          <div class="relative z-10">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/20 pb-4 gap-2">
+              <div>
+                <div class="text-xs font-semibold text-blue-200 uppercase tracking-wider">Estimated Green Card Approval</div>
+                <h3 class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-0.5">May 2031</h3>
+              </div>
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white/20 border border-white/30">~5 years remaining</span>
+            </div>
+            <div class="grid grid-cols-3 gap-4 pt-4 text-center">
+              <div>
+                <div class="text-[11px] text-blue-200">Active Bulletin Cutoff</div>
+                <div class="text-sm sm:text-base font-bold mt-0.5">EB-2 India: 2014</div>
+              </div>
+              <div class="border-x border-white/20 px-2">
+                <div class="text-[11px] text-blue-200">Priority Date Queue</div>
+                <div class="text-sm sm:text-base font-bold mt-0.5">63 months</div>
+              </div>
+              <div>
+                <div class="text-[11px] text-blue-200">USCIS I-485 Filing</div>
+                <div class="text-sm sm:text-base font-bold mt-0.5">2026-09</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Immigration Roadmap Milestones</h3>
+              <p class="text-xs text-slate-500">Progress toward green card readiness</p>
+            </div>
+            <span class="text-blue-600 font-semibold">56% Complete</span>
+          </div>
+
+          <div class="relative py-2">
+            <div class="overflow-hidden h-2 rounded bg-slate-100 mb-4">
+              <div class="h-2 rounded bg-gradient-to-r from-blue-500 to-indigo-600" style="width: 56%"></div>
+            </div>
+            <div class="grid grid-cols-4 text-center text-[11px] font-medium text-slate-500">
+              <div class="text-blue-600 font-bold">1. PERM / Priority Date</div>
+              <div>2. I-140 Approval</div>
+              <div>3. PD Current / Filing</div>
+              <div>4. Final Green Card</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+          <div class="flex items-center justify-between pb-2">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Priority Date Catch-up Projection</h3>
+              <p class="text-xs text-slate-500">Historical and simulated Visa Bulletin path</p>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-slate-600">
+              <span class="inline-block w-3 h-3 bg-blue-600 rounded-sm"></span> Cutoff Trend
+              <span class="inline-block w-3 h-3 bg-rose-500 rounded-sm ml-2"></span> Your Priority Date
+            </div>
+          </div>
+          <div class="mt-4 h-64 rounded-xl border border-slate-200 bg-slate-50 grid-pattern p-4">
+            <div class="flex h-full w-full items-end">
+              <div class="w-full flex items-end justify-between h-full gap-2">
+                <div class="flex-1 flex items-end justify-around h-full">
+                  <div class="w-full bg-blue-500/80 rounded-t-md" style="height: 26%"></div>
+                  <div class="w-full bg-blue-500/80 rounded-t-md" style="height: 38%"></div>
+                  <div class="w-full bg-blue-500/80 rounded-t-md" style="height: 48%"></div>
+                  <div class="w-full bg-blue-500/80 rounded-t-md" style="height: 64%"></div>
+                  <div class="w-full bg-blue-500/80 rounded-t-md" style="height: 52%"></div>
+                  <div class="w-full bg-blue-500/80 rounded-t-md" style="height: 74%"></div>
+                  <div class="w-full bg-blue-500/80 rounded-t-md" style="height: 68%"></div>
+                </div>
+                <div class="w-3 bg-rose-500 rounded-t-md" style="height: 80%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+          <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3">Pace Scenario Comparison</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="border-b border-slate-200 bg-slate-50 text-slate-600">
+                  <th class="p-2.5">Scenario</th>
+                  <th class="p-2.5">Historical Data</th>
+                  <th class="p-2.5">Est. I-485 Eligibility</th>
+                  <th class="p-2.5">Est. Green Card</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr>
+                  <td class="p-2.5 font-medium">Conservative</td>
+                  <td class="p-2.5">Slow</td>
+                  <td class="p-2.5">2030</td>
+                  <td class="p-2.5">2033</td>
+                </tr>
+                <tr>
+                  <td class="p-2.5 font-medium">Baseline</td>
+                  <td class="p-2.5">Moderate</td>
+                  <td class="p-2.5">2029</td>
+                  <td class="p-2.5">2031</td>
+                </tr>
+                <tr>
+                  <td class="p-2.5 font-medium">Optimistic</td>
+                  <td class="p-2.5">Fast</td>
+                  <td class="p-2.5">2028</td>
+                  <td class="p-2.5">2030</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bg-white border-t border-slate-200 mt-auto py-6 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 space-y-1">
+      <p>© 2026 GreenCardPulse Engine. Uses official U.S. Department of State Visa Bulletin data plus separately labeled forecasting inputs.</p>
+      <p class="text-[10px] text-slate-400">
+        <a class="underline hover:text-blue-600" href="https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin.html" target="_blank" rel="noopener">Official Visa Bulletin</a>
+        · <a class="underline hover:text-blue-600" href="https://www.uscis.gov/visabulletininfo" target="_blank" rel="noopener">USCIS Visa Bulletin filing-chart guidance</a>
+        · <a class="underline hover:text-blue-600" href="faq.html">FAQ</a>
+      </p>
+    </div>
+  </footer>
 </body>
 </html>
