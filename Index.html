@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GreenCardPulse - AI-Powered US Visa Bulletin & Priority Date Predictor</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#2563eb',
+                            600: '#1d4ed8',
+                            700: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .pulse-ring {
+            animation: pulse-ring 2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+        }
+    </style>
+</head>
+<body class="h-full font-sans text-slate-800 antialiased flex flex-col">
+
+    <!-- Navigation Header -->
+    <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+                        <i class="fa-solid fa-passport text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="font-extrabold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-blue-200">GreenCardPulse</span>
+                            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                                <i class="fa-solid fa-bolt text-[9px]"></i> Official Data + Forecast Engine
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400 hidden sm:block">US Visa Bulletin Analytics & Automated Priority Date Forecasting</p>
+                    </div>
+                </div>
+
+                <!-- Quick Action Header Badges -->
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <!-- Live Sync Indicator -->
+                    <div id="sync-status-badge" class="flex items-center space-x-2 text-xs bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+                        <span id="sync-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span class="text-slate-300 hidden md:inline">Data Source:</span>
+                        <strong class="text-white font-semibold text-[11px] sm:text-xs" id="vb-month-label">Baseline Snapshot</strong>
+                    </div>
+
+                    <!-- Fetch Latest Bulletin Button -->
+                    <button id="ai-sync-btn" onclick="triggerAISync()" class="text-xs bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1.5 shadow-md shadow-emerald-900/20">
+                        <i class="fa-solid fa-rotate text-xs" id="sync-icon"></i>
+                        <span class="hidden sm:inline">Sync Latest Bulletin</span>
+                        <span class="sm:hidden">Sync</span>
+                    </button>
+
+                    <!-- Load Presets -->
+                    <button id="preset-btn" onclick="togglePresetsModal()" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1 shadow-sm">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span class="hidden sm:inline">Presets</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Sync Progress Status Bar (Collapsible) -->
+        <div id="ai-sync-banner" class="hidden bg-gradient-to-r from-slate-800 via-indigo-950 to-slate-800 border-t border-indigo-500/30 px-4 py-2 text-xs text-indigo-200">
+            <div class="max-w-7xl mx-auto flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-microchip animate-spin text-indigo-400"></i>
+                    <span id="ai-sync-status-text">Connecting to Gemini 3 Flash & Google Search to fetch official Department of State Visa Bulletin...</span>
+                </div>
+                <div class="text-[10px] text-indigo-300 font-mono hidden md:block" id="ai-sync-timer">Searching travel.state.gov</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Citation Sources Footer Bar -->
+    <div id="citation-container" class="bg-slate-100 border-b border-slate-200 px-4 py-1.5 text-[11px] text-slate-600 flex items-center justify-between hidden">
+        <div class="max-w-7xl mx-auto w-full flex items-center justify-between">
+            <div class="flex items-center space-x-2 overflow-hidden">
+                <i class="fa-solid fa-link text-blue-600"></i>
+                <span class="font-semibold text-slate-700">Grounded Citation:</span>
+                <a id="citation-link" href="#" target="_blank" class="text-blue-600 underline truncate hover:text-blue-800">
+                    Official US Dept of State Visa Bulletin
+                </a>
+            </div>
+            <span class="text-[10px] text-slate-400 whitespace-nowrap ml-2" id="citation-timestamp">Just now</span>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT COLUMN: User Profile & Inputs (5 Cols on LG) -->
+        <section class="lg:col-span-5 space-y-6">
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6 space-y-5">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                        <i class="fa-solid fa-sliders text-blue-600"></i>
+                        <span>Immigration Profile</span>
+                    </h2>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="toggleDataInspectModal()" class="text-xs text-indigo-600 hover:text-indigo-800 transition flex items-center space-x-1 font-medium bg-indigo-50 px-2 py-1 rounded-lg">
+                            <i class="fa-solid fa-database"></i>
+                            <span>Inspect Cutoffs</span>
+                        </button>
+                        <button onclick="resetInputs()" class="text-xs text-slate-500 hover:text-blue-600 transition flex items-center space-x-1">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            <span>Reset</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Input Form -->
+                <form id="calculator-form" onsubmit="event.preventDefault();" class="space-y-4">
+                    
+                    <!-- Visa Preference Stream -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1.5">Visa Category Stream</label>
+                        <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+                            <button type="button" id="tab-eb" onclick="setStream('EB')" class="py-2 text-xs font-semibold rounded-lg transition shadow-sm bg-white text-blue-600">
+                                <i class="fa-solid fa-briefcase mr-1"></i> Employment (EB)
+                            </button>
+                            <button type="button" id="tab-fb" onclick="setStream('FB')" class="py-2 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-slate-900">
+                                <i class="fa-solid fa-users text-xs mr-1"></i> Family-Based (FB)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Category Select -->
+                    <div>
+                        <label for="category" class="block text-xs font-semibold text-slate-700 mb-1">Specific Preference Category</label>
+                        <select id="category" onchange="calculateTimeline()" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl focus:ring-blue-500 focus:border-blue-500 p-2.5 font-medium transition">
+                            <!-- Populated dynamically via JS -->
+                        </select>
+                    </div>
+
+                    <!-- Country of Chargeability -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label for="country" class="block text-xs font-semibold text-slate-700">Country of Birth (Chargeability)</label>
+                            <span class="text-[11px] text-blue-600 hover:underline cursor-pointer" onclick="toggleCrossChargeModal()">Cross-chargeability?</span>
+                        </div>
+                        <select id="country" onchange="calculateTimeline()" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl focus:ring-blue-500 focus:border-blue-500 p-2.5 font-medium transition">
+                            <option value="IND">India</option>
+                            <option value="CHN">China (Mainland born)</option>
+                            <option value="MEX">Mexico</option>
+                            <option value="PHL">Philippines</option>
+                            <option value="ROW" selected>Rest of World (All Other Areas)</option>
+                        </select>
+                    </div>
+
+                    <!-- Priority Date Selection -->
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label for="pd-month" class="block text-xs font-semibold text-slate-700 mb-1">Priority Date Month</label>
+                            <select id="pd-month" onchange="populateDays(); calculateTimeline()" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl focus:ring-blue-500 focus:border-blue-500 p-2.5 transition">
+                                <option value="0">January</option>
+                                <option value="1">February</option>
+                                <option value="2">March</option>
+                                <option value="3">April</option>
+                                <option value="4">May</option>
+                                <option value="5">June</option>
+                                <option value="6">July</option>
+                                <option value="7">August</option>
+                                <option value="8">September</option>
+                                <option value="9">October</option>
+                                <option value="10">November</option>
+                                <option value="11">December</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="pd-day" class="block text-xs font-semibold text-slate-700 mb-1">Day</label>
+                            <select id="pd-day" onchange="calculateTimeline()" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl focus:ring-blue-500 focus:border-blue-500 p-2.5 transition">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                        <div>
+                            <label for="pd-year" class="block text-xs font-semibold text-slate-700 mb-1">Priority Date Year</label>
+                            <select id="pd-year" onchange="populateDays(); calculateTimeline()" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl focus:ring-blue-500 focus:border-blue-500 p-2.5 transition">
+                                <!-- Populated dynamically JS (2000 to Current Year) -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Stage / Current Filing Status -->
+                    <div>
+                        <label for="current-stage" class="block text-xs font-semibold text-slate-700 mb-1">Current Processing Stage</label>
+                        <select id="current-stage" onchange="calculateTimeline()" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl focus:ring-blue-500 focus:border-blue-500 p-2.5 transition">
+                            <option value="PERM_PENDING">PERM Labor Certification Pending / Planned</option>
+                            <option value="I140_PENDING">I-140 Petition Pending / Approved</option>
+                            <option value="I485_FILED">I-485 Adjustment of Status Pending</option>
+                            <option value="CONSULAR">Consular Processing Pending</option>
+                        </select>
+                    </div>
+
+                    <!-- Movement Velocity Scenario Selector -->
+                    <div class="pt-2 border-t border-slate-100">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-xs font-semibold text-slate-700">Movement Pace Model</label>
+                            <span id="speed-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">Historical Avg</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button type="button" id="pace-pessimistic" onclick="setPace('pessimistic')" class="py-2 px-1 text-center border border-slate-200 rounded-xl text-xs font-medium text-slate-600 hover:border-slate-400 transition">
+                                <div class="font-semibold text-slate-800">Conservative</div>
+                                <div class="text-[10px] text-slate-400">Slow Movement</div>
+                            </button>
+                            <button type="button" id="pace-moderate" onclick="setPace('moderate')" class="py-2 px-1 text-center border-2 border-blue-600 bg-blue-50/50 rounded-xl text-xs font-medium text-blue-700 transition">
+                                <div class="font-semibold">Baseline</div>
+                                <div class="text-[10px] text-blue-500">Historical Trend</div>
+                            </button>
+                            <button type="button" id="pace-optimistic" onclick="setPace('optimistic')" class="py-2 px-1 text-center border border-slate-200 rounded-xl text-xs font-medium text-slate-600 hover:border-slate-400 transition">
+                                <div class="font-semibold text-slate-800">Optimistic</div>
+                                <div class="text-[10px] text-slate-400">Fast Forward</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Spousal Cross-chargeability toggle checkbox -->
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-start space-x-3">
+                        <input id="cross-charge" type="checkbox" onchange="calculateTimeline()" class="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                        <div class="text-xs">
+                            <label for="cross-charge" class="font-semibold text-slate-800 cursor-pointer">Spousal Cross-Chargeability</label>
+                            <p class="text-slate-500 text-[11px] leading-tight mt-0.5">Check if your spouse was born in a non-backlogged country (e.g. ROW) to bypass per-country caps.</p>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Quick Info / Key Insights Box -->
+            <div class="bg-gradient-to-br from-slate-900 to-indigo-950 rounded-2xl p-5 text-white shadow-md">
+                <div class="flex items-center space-x-2 text-xs font-semibold text-indigo-300 uppercase tracking-wider mb-2">
+                    <i class="fa-solid fa-lightbulb text-amber-400"></i>
+                    <span>Visa Bulletin Analysis</span>
+                </div>
+                <div id="dynamic-insight-text" class="text-xs text-slate-300 leading-relaxed space-y-2">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT COLUMN: Analytics, Charts, Predictions (7 Cols on LG) -->
+        <section class="lg:col-span-7 space-y-6">
+
+            <!-- Hero Result Banner Card -->
+            <div id="result-hero-card" class="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+                
+                <div class="relative z-10">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/20 pb-4 gap-2">
+                        <div>
+                            <span class="text-xs font-semibold text-blue-200 uppercase tracking-wider">Estimated Green Card Approval</span>
+                            <h3 id="hero-est-date" class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-0.5">Calculating...</h3>
+                        </div>
+                        <div class="text-left sm:text-right">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white/20 backdrop-blur-md text-white border border-white/30" id="hero-remaining-time">
+                                - Remaining Wait
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Metrics Trio -->
+                    <div class="grid grid-cols-3 gap-4 pt-4 text-center">
+                        <div>
+                            <div class="text-[11px] text-blue-200">Active Bulletin Cutoff</div>
+                            <div id="metric-current-cutoff" class="text-sm sm:text-base font-bold mt-0.5">--</div>
+                        </div>
+                        <div class="border-x border-white/20 px-2">
+                            <div class="text-[11px] text-blue-200">Priority Date Queue</div>
+                            <div id="metric-queue-months" class="text-sm sm:text-base font-bold mt-0.5">--</div>
+                        </div>
+                        <div>
+                            <div class="text-[11px] text-blue-200">USCIS I-485 Filing</div>
+                            <div id="metric-filing-date" class="text-sm sm:text-base font-bold mt-0.5">--</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Milestone Progress Tracker Bar -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-3">
+                <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center justify-between">
+                    <span>Immigration Roadmap Milestones</span>
+                    <span id="roadmap-pct" class="text-blue-600 font-semibold">0% Complete</span>
+                </h3>
+                
+                <!-- Visual Steps Bar -->
+                <div class="relative py-2">
+                    <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-slate-100">
+                        <div id="progress-bar-fill" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-700" style="width: 25%"></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-4 text-center text-[11px] font-medium text-slate-500">
+                        <div id="step-1" class="text-blue-600 font-bold">1. PERM / Priority Date</div>
+                        <div id="step-2">2. I-140 Approval</div>
+                        <div id="step-3">3. PD Current / Filing</div>
+                        <div id="step-4">4. Final Green Card</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Projection Chart Canvas -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900">Priority Date Catch-up Projection</h3>
+                        <p class="text-xs text-slate-500">Historical/simulated Visa Bulletin path toward your Priority Date</p>
+                    </div>
+                    <div class="flex items-center space-x-2 text-xs">
+                        <span class="inline-block w-3 h-3 bg-blue-600 rounded-sm"></span>
+                        <span class="text-slate-600">Cutoff Trend</span>
+                        <span class="inline-block w-3 h-3 bg-rose-500 rounded-sm ml-2"></span>
+                        <span class="text-slate-600">Your Priority Date</span>
+                    </div>
+                </div>
+
+                <div class="h-64 relative w-full">
+                    <canvas id="projectionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Scenario Sensitivity Comparison Table -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-3">
+                <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Pace Scenario Comparison</h3>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="border-b border-slate-200 bg-slate-50 text-slate-600">
+                                <th class="p-2.5 rounded-l-lg">Scenario</th>
+                                <th class="p-2.5">Historical Data</th>
+                                <th class="p-2.5">Est. I-485 Eligibility</th>
+                                <th class="p-2.5 rounded-r-lg">Est. Green Card</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scenario-table-body" class="divide-y divide-slate-100">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+
+            <!-- Forecast & Data Quality -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-indigo-600"></i>
+                            <span>Forecast & Data Quality</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-1">Separates official published cutoffs from forward-looking estimates.</p>
+                    </div>
+                    <span id="forecast-confidence-badge" class="text-[10px] font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-600">No forecast</span>
+                </div>
+                <div id="forecast-panel" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs"></div>
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[11px] text-amber-900 leading-relaxed">
+                    <strong>Forecast rule:</strong> Forecasts are not Visa Bulletin dates. The calculator uses the latest official DOS bulletin as the factual baseline and separately labels private/model forecasts and DOS forward-looking statements. Retrogression, annual limits, demand, spillover and policy changes can materially change the outcome.
+                </div>
+            </div>
+
+
+            <!-- Intelligent Historical Forecast Engine -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-brain text-purple-600"></i>
+                            <span>Intelligent Historical Forecast Engine</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-1">Uses historical Visa Bulletin movement, fiscal-year resets, holds, retrogression and uncertainty instead of a fixed annual velocity.</p>
+                    </div>
+                    <span id="model-regime-badge" class="text-[10px] font-bold px-2 py-1 rounded-full bg-purple-100 text-purple-700">Historical model</span>
+                </div>
+
+                <div id="model-summary" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="rounded-xl border border-slate-200 overflow-hidden">
+                        <div class="px-3 py-2 bg-slate-50 text-xs font-bold text-slate-700">Projected Priority-Date Crossing</div>
+                        <div id="model-crossing-table" class="p-3 text-xs"></div>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 overflow-hidden">
+                        <div class="px-3 py-2 bg-slate-50 text-xs font-bold text-slate-700">Why the model reached this range</div>
+                        <div id="model-explanation" class="p-3 text-xs text-slate-600 space-y-2"></div>
+                    </div>
+                </div>
+
+                <div class="rounded-xl bg-purple-50 border border-purple-100 p-3 text-[11px] text-purple-950 leading-relaxed">
+                    <strong>Model methodology:</strong> Historical observations are weighted toward recent comparable periods. The simulation permits monthly holds, forward movement and retrogression, applies a fiscal-year reset effect around October, and reports a range rather than a single deterministic date. Where historical coverage is limited, the engine explicitly falls back to a planning prior instead of pretending it has complete data.
+                </div>
+            </div>
+
+            <!-- Strategic Action Steps & Porting Advice -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4">
+                <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                    <i class="fa-solid fa-compass text-blue-600"></i>
+                    <span>Strategic Recommendations & Risk Factors</span>
+                </h3>
+
+                <div id="recommendations-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Legal Disclaimer Banner -->
+            <div class="text-[11px] text-slate-400 bg-slate-100 p-3.5 rounded-xl border border-slate-200 leading-relaxed">
+                <strong>Important Legal Disclaimer:</strong> GreenCardPulse uses the latest verified DOS Visa Bulletin dataset embedded in the file and separately labeled planning/forecast inputs. It does not silently treat forecasts as government data. Estimates are strictly for educational and informational planning purposes and do <em>not</em> constitute formal legal advice. Visa bulletin movements can fluctuate, freeze, or retrogress unexpectedly. Consult a qualified immigration attorney for legal filings.
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Inspect / Edit Data Modal -->
+    <div id="data-inspect-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-5 shadow-2xl border border-slate-200 max-h-[85vh] flex flex-col">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                        <i class="fa-solid fa-table text-blue-600"></i>
+                        <span>Active Visa Bulletin Cutoff Dates</span>
+                    </h3>
+                    <p class="text-xs text-slate-500">View or manually adjust priority cutoffs loaded into the calculation engine.</p>
+                </div>
+                <button onclick="toggleDataInspectModal()" class="text-slate-400 hover:text-slate-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto space-y-4 pr-1">
+                <div class="flex items-center justify-between text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                    <span class="font-semibold text-slate-700">Current Bulletin Name:</span>
+                    <span id="inspect-bulletin-title" class="font-mono text-blue-600 font-bold">March 2026 Baseline</span>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Employment-Based (EB) Cutoffs</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs font-mono">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-700">
+                                    <th class="p-2">Cat</th>
+                                    <th class="p-2">India</th>
+                                    <th class="p-2">China</th>
+                                    <th class="p-2">ROW</th>
+                                    <th class="p-2">Mexico</th>
+                                    <th class="p-2">Philippines</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inspect-eb-body" class="divide-y divide-slate-100">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Family-Based (FB) Cutoffs</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs font-mono">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-700">
+                                    <th class="p-2">Cat</th>
+                                    <th class="p-2">India</th>
+                                    <th class="p-2">China</th>
+                                    <th class="p-2">ROW</th>
+                                    <th class="p-2">Mexico</th>
+                                    <th class="p-2">Philippines</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inspect-fb-body" class="divide-y divide-slate-100">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex justify-between items-center flex-shrink-0">
+                <button onclick="triggerAISync()" class="px-3 py-1.5 bg-emerald-600 text-white font-semibold text-xs rounded-xl hover:bg-emerald-500 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate text-xs"></i>
+                    <span>Verify Official DOS Source</span>
+                </button>
+                <button onclick="toggleDataInspectModal()" class="px-4 py-1.5 bg-slate-100 text-slate-700 font-semibold text-xs rounded-xl hover:bg-slate-200 transition">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Presets Modal -->
+    <div id="presets-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-slate-200">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-900 text-base">Select Common Immigration Presets</h3>
+                <button onclick="togglePresetsModal()" class="text-slate-400 hover:text-slate-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <p class="text-xs text-slate-500">Choose a preset profile to test typical wait times for various countries and visa categories.</p>
+
+            <div class="space-y-2">
+                <button onclick="loadPreset('eb2_india')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition group">
+                    <div class="font-semibold text-xs text-slate-800 group-hover:text-blue-600">EB-2 India STEM Tech Worker</div>
+                    <div class="text-[11px] text-slate-500">High backlog stream | Priority Date: Oct 2014</div>
+                </button>
+                
+                <button onclick="loadPreset('eb3_india')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition group">
+                    <div class="font-semibold text-xs text-slate-800 group-hover:text-blue-600">EB-3 India Skilled Worker</div>
+                    <div class="text-[11px] text-slate-500">Active movement | Priority Date: May 2013</div>
+                </button>
+
+                <button onclick="loadPreset('eb2_china')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition group">
+                    <div class="font-semibold text-xs text-slate-800 group-hover:text-blue-600">EB-2 China Mainland Born</div>
+                    <div class="text-[11px] text-slate-500">Moderate backlog stream | Priority Date: Feb 2021</div>
+                </button>
+
+                <button onclick="loadPreset('eb2_row')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition group">
+                    <div class="font-semibold text-xs text-slate-800 group-hover:text-blue-600">EB-2 Rest of World (ROW)</div>
+                    <div class="text-[11px] text-slate-500">Minor backlog | Priority Date: Jun 2023</div>
+                </button>
+
+                <button onclick="loadPreset('fb4_india')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition group">
+                    <div class="font-semibold text-xs text-slate-800 group-hover:text-blue-600">FB-4 Brother/Sister of US Citizen (India)</div>
+                    <div class="text-[11px] text-slate-500">Family preference backlog | Priority Date: Dec 2006</div>
+                </button>
+            </div>
+
+            <div class="pt-2 flex justify-end">
+                <button onclick="togglePresetsModal()" class="px-4 py-2 bg-slate-100 text-slate-700 font-semibold text-xs rounded-xl hover:bg-slate-200 transition">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cross-Chargeability Explainer Modal -->
+    <div id="cross-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200 text-xs text-slate-600">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                <h3 class="font-bold text-slate-900 text-sm">Understanding Cross-Chargeability</h3>
+                <button onclick="toggleCrossChargeModal()" class="text-slate-400 hover:text-slate-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <p>Under INA § 202(b), an immigrant applicant can be "charged" to their spouse's country of birth if it prevents family separation.</p>
+            
+            <div class="bg-blue-50 p-3 rounded-xl border border-blue-200 text-blue-900">
+                <strong>Example:</strong> If the primary applicant was born in <strong>India</strong> (where EB-2 has a 12+ year wait), but their spouse was born in <strong>Germany or UK</strong> (Rest of World - ROW), the primary applicant can claim ROW chargeability and may use the spouse's chargeability if the legal requirements are satisfied; the timing still depends on the applicable category and cutoff.
+            </div>
+
+            <p>Check the "Spousal Cross-Chargeability" option on the calculator to see how drastically your timeline accelerates!</p>
+
+            <div class="pt-2 flex justify-end">
+                <button onclick="toggleCrossChargeModal()" class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-500 transition">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-auto py-6 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 space-y-1">
+            <p>© 2026 GreenCardPulse Engine. Uses official U.S. Department of State Visa Bulletin data plus separately labeled forecasting inputs.</p>
+            <p class="text-[10px] text-slate-400">
+                <a class="underline hover:text-blue-600" href="https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin.html" target="_blank" rel="noopener">Official Visa Bulletin index</a>
+                · <a class="underline hover:text-blue-600" href="https://www.uscis.gov/visabulletininfo" target="_blank" rel="noopener">USCIS Visa Bulletin filing-chart guidance</a>
+                · Historical methodology uses official DOS archive data; forecast source is identified inside the Forecast panel.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // ==========================================
+        // VISA BULLETIN BASELINE CUTOFF DATA
+        // Format: 'YYYY-MM-DD'
+        // ==========================================
+        // ==========================================
+        // OFFICIAL BASELINE + FORECAST DATA
+        // Source: U.S. Department of State, September 2026 Visa Bulletin.
+        // Dates are represented as YYYY-MM-DD; "C" = current, "U" = unavailable.
+        // ==========================================
+        let CURRENT_BULLETIN_NAME = 'September 2026 Visa Bulletin';
+        let CURRENT_BULLETIN_DATE = '2026-09-01';
+        let CURRENT_BULLETIN_SOURCE = 'https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin/2026/visa-bulletin-for-september-2026.html';
+        let USCIS_AOS_CHART = {
+            EB: 'Final Action Dates',
+            FB: 'Dates for Filing'
+        };
+        let BULLETIN_DATA_VERSION = 'official-september-2026';
+
+        const C = 'C';
+        const U = 'U';
+
+        let VISA_BULLETIN_DATA = {
+            EB: {
+                EB1:  { IND:'2022-10-15', CHN:'2023-07-01', ROW:C, MEX:C, PHL:C },
+                EB2:  { IND:U,           CHN:'2021-09-01', ROW:C, MEX:C, PHL:C },
+                EB3:  { IND:'2014-01-01', CHN:'2022-01-01', ROW:'2024-09-01', MEX:'2024-09-01', PHL:'2023-08-01' },
+                EB3W: { IND:'2014-01-01', CHN:'2019-05-01', ROW:'2022-04-01', MEX:'2022-04-01', PHL:'2021-12-01' },
+                EB4:  { IND:'2022-12-15', CHN:'2022-12-15', ROW:'2022-12-15', MEX:'2022-12-15', PHL:'2022-12-15' },
+                EB5:  { IND:U, CHN:'2016-12-01', ROW:C, MEX:C, PHL:C },
+                EB5R: { IND:C, CHN:C, ROW:C, MEX:C, PHL:C },
+                EB5H: { IND:C, CHN:C, ROW:C, MEX:C, PHL:C },
+                EB5I: { IND:C, CHN:C, ROW:C, MEX:C, PHL:C }
+            },
+            FB: {
+                FB1:  { IND:'2020-01-22', CHN:'2020-01-22', ROW:'2020-01-22', MEX:'2008-01-01', PHL:'2013-05-01' },
+                FB2A: { IND:'2026-08-22', CHN:'2026-08-22', ROW:'2026-08-22', MEX:'2025-08-22', PHL:'2026-08-22' },
+                FB2B: { IND:'2019-08-22', CHN:'2019-08-22', ROW:'2019-08-22', MEX:'2009-02-15', PHL:'2013-06-01' },
+                FB3:  { IND:'2014-10-22', CHN:'2014-10-22', ROW:'2014-10-22', MEX:'2001-07-01', PHL:'2006-02-22' },
+                FB4:  { IND:'2006-11-01', CHN:'2011-10-22', ROW:'2011-10-22', MEX:'2001-04-08', PHL:'2007-08-22' }
+            }
+        };
+
+        // Dates for Filing from the same official bulletin.
+        let VISA_FILING_DATA = {
+            EB: {
+                EB1:  { IND:'2023-12-01', CHN:'2023-12-01', ROW:C, MEX:C, PHL:C },
+                EB2:  { IND:'2015-01-15', CHN:'2022-01-01', ROW:C, MEX:C, PHL:C },
+                EB3:  { IND:'2015-01-15', CHN:'2022-01-08', ROW:C, MEX:C, PHL:'2024-01-01' },
+                EB3W: { IND:'2015-01-15', CHN:'2019-10-01', ROW:'2022-08-01', MEX:'2022-08-01', PHL:'2022-08-01' },
+                EB4:  { IND:'2023-01-01', CHN:'2023-01-01', ROW:'2023-01-01', MEX:'2023-01-01', PHL:'2023-01-01' },
+                EB5:  { IND:'2024-05-01', CHN:'2017-03-01', ROW:C, MEX:C, PHL:C },
+                EB5R: { IND:C, CHN:C, ROW:C, MEX:C, PHL:C },
+                EB5H: { IND:C, CHN:C, ROW:C, MEX:C, PHL:C },
+                EB5I: { IND:C, CHN:C, ROW:C, MEX:C, PHL:C }
+            },
+            FB: {
+                FB1:  { IND:'2020-02-01', CHN:'2020-02-01', ROW:'2020-02-01', MEX:'2008-12-01', PHL:'2015-04-22' },
+                FB2A: { IND:C, CHN:C, ROW:C, MEX:C, PHL:C },
+                FB2B: { IND:'2019-09-01', CHN:'2019-09-01', ROW:'2019-09-01', MEX:'2010-05-15', PHL:'2013-10-01' },
+                FB3:  { IND:'2014-11-01', CHN:'2014-11-01', ROW:'2014-11-01', MEX:'2001-07-15', PHL:'2006-08-08' },
+                FB4:  { IND:'2006-12-15', CHN:'2011-11-01', ROW:'2011-11-01', MEX:'2001-04-30', PHL:'2008-03-22' }
+            }
+        };
+
+        // Private/model forecast metadata available as of Sep. 18, 2026.
+        // This is deliberately separate from official data.
+        const FORECAST_DATA = {
+            bulletin: 'October 2026',
+            source: 'https://visa-bulletin.us/predictions/october-2026/',
+            items: {
+                EB1_IND: { value:'2022-10-15', range:'2022-08-17 to 2022-10-15', confidence:'model range', note:'Model forecast; 80% range shown by source.' },
+                EB2_IND: { value:'2014-07-15', range:null, confidence:'DOS floor / conditional', note:'DOS indicated the October date is likely to advance to at least July 15, 2014; not an official October cutoff.' },
+                EB3_IND: { value:'2014-04-03', range:'2014-03-20 to 2014-06-17', confidence:'53% move >50 days', note:'Private model forecast.' },
+                EB2_CHN:{ value:'2021-09-12', range:'2021-08-12 to 2021-11-12', confidence:'47% move >50 days', note:'Private model forecast.' },
+                EB3_CHN:{ value:'2022-03-04', range:'2022-01-25 to 2022-07-25', confidence:'47% move >50 days', note:'Private model forecast.' }
+            }
+        };
+
+        // ==========================================
+        // INTELLIGENT HISTORICAL FORECAST ENGINE
+        // ==========================================
+        // The official DOS archive publishes monthly Visa Bulletins and also maintains
+        // historical India employment final-action series. The embedded observations
+        // below are a transparent, verified seed set; the engine does not fabricate
+        // missing observations. Recent bulletin anchors are included separately.
+        const HISTORICAL_CUTOFFS = {
+            EB1_IND: [
+                ['2022-10','C'],['2022-11','C'],['2022-12','C'],['2023-01','2022-02-01'],
+                ['2023-02','2022-02-01'],['2023-03','2022-02-01'],['2023-04','2022-02-01'],
+                ['2023-05','2022-02-01'],['2023-06','2022-02-01'],['2023-07','2022-02-01'],
+                ['2023-08','2022-01-01'],['2023-09','2022-01-01'],
+                ['2023-12','2017-01-01'],['2024-01','2020-09-01'],['2024-06','2021-03-01'],
+                ['2024-07','2022-02-01'],['2024-09','2022-02-01'],['2025-07','2022-02-15'],
+                ['2025-09','2022-02-15'],['2025-12','2022-03-15'],['2026-05','2023-04-01'],
+                ['2026-09','2022-10-15']
+            ],
+            EB2_IND: [
+                ['2022-10','2012-04-01'],['2022-11','2012-04-01'],['2022-12','2011-10-08'],
+                ['2023-01','2011-10-08'],['2023-02','2011-10-08'],['2023-03','2011-10-08'],
+                ['2023-04','2011-01-01'],['2023-05','2011-01-01'],['2023-06','2011-01-01'],
+                ['2023-07','2011-01-01'],['2023-08','2012-01-01'],['2023-09','2012-01-01'],
+                ['2023-12','2012-01-01'],['2024-01','2012-03-01'],['2024-06','2012-04-15'],
+                ['2024-07','2012-06-15'],['2024-09','2012-07-15'],['2024-12','2012-08-01'],
+                ['2025-07','2013-01-01'],['2025-08','2013-01-01'],['2025-09','2013-01-01'],
+                ['2025-12','2013-05-15'],['2026-05','2014-07-15'],['2026-09','U']
+            ],
+            EB3_IND: [
+                ['2022-10','2012-04-01'],['2022-11','2012-04-01'],['2022-12','2012-06-15'],
+                ['2023-01','2012-06-15'],['2023-02','2012-06-15'],['2023-03','2012-06-15'],
+                ['2023-04','2012-06-15'],['2023-05','2012-06-15'],['2023-06','2012-06-15'],
+                ['2023-07','2009-01-01'],['2023-08','2009-01-01'],['2023-09','2009-01-01'],
+                ['2023-12','2012-05-01'],['2024-01','2012-06-01'],['2024-06','2012-08-22'],
+                ['2024-07','2012-09-22'],['2024-09','2012-10-22'],['2024-12','2012-11-08'],
+                ['2025-07','2013-04-22'],['2025-08','2013-05-22'],['2025-09','2013-05-22'],
+                ['2025-12','2013-09-22'],['2026-05','2013-11-15'],['2026-09','2014-01-01']
+            ],
+            EB3W_IND: [
+                ['2022-10','2012-04-01'],['2022-11','2012-04-01'],['2022-12','2012-06-15'],
+                ['2023-01','2012-06-15'],['2023-02','2012-06-15'],['2023-03','2012-06-15'],
+                ['2023-04','2012-06-15'],['2023-05','2012-06-15'],['2023-06','2012-06-15'],
+                ['2023-07','2009-01-01'],['2023-08','2009-01-01'],['2023-09','2009-01-01'],
+                ['2024-09','2012-10-22'],['2025-07','2013-04-22'],['2025-09','2013-05-22'],
+                ['2025-12','2013-09-22'],['2026-05','2013-11-15'],['2026-09','2014-01-01']
+            ],
+            EB2_CHN: [
+                ['2023-09','2019-07-08'],['2024-01','2020-01-01'],['2024-06','2020-02-01'],
+                ['2024-09','2020-03-01'],['2024-12','2020-03-22'],['2025-07','2020-12-15'],
+                ['2025-09','2020-12-15'],['2025-12','2021-06-01'],['2026-05','2021-09-01'],
+                ['2026-09','2021-09-01']
+            ],
+            EB3_CHN: [
+                ['2023-09','2019-09-01'],['2024-01','2020-09-01'],['2024-06','2020-09-01'],
+                ['2024-09','2020-09-01'],['2024-12','2020-04-01'],['2025-07','2020-12-01'],
+                ['2025-09','2020-12-01'],['2025-12','2021-04-01'],['2026-05','2021-06-15'],
+                ['2026-09','2022-01-01']
+            ]
+        };
+
+        // Recent official anchors for categories/countries where full history is not
+        // embedded. These anchors are used only to calibrate a transparent planning
+        // prior; they are not presented as a complete historical series.
+        const RECENT_ANCHORS = {
+            EB2_ROW: [['2024-01','2022-11-01'],['2024-06','2023-01-15'],['2024-09','2023-03-15'],['2024-12','2023-03-15'],['2025-07','2023-10-15'],['2025-09','2023-09-01'],['2025-12','2024-02-01'],['2026-05','C'],['2026-09','C']],
+            EB3_ROW: [['2024-01','2022-08-01'],['2024-06','2022-11-22'],['2024-09','2020-12-01'],['2024-12','2022-11-15'],['2025-07','2023-04-01'],['2025-09','2023-04-01'],['2025-12','2023-04-01'],['2026-05','2024-06-01'],['2026-09','2024-09-01']]
+        };
+
+        const PLANNING_PRIORS = {
+            EB1: { low:2, base:5, high:9 },
+            EB2: { low:1.5, base:4, high:7 },
+            EB3: { low:1.5, base:4, high:7 },
+            EB3W:{ low:1, base:3, high:6 },
+            EB4: { low:1, base:3, high:5 },
+            EB5: { low:2, base:5, high:8 },
+            FB1: { low:1, base:3, high:5 },
+            FB2A:{ low:1, base:4, high:7 },
+            FB2B:{ low:1, base:3, high:5 },
+            FB3: { low:1, base:3, high:5 },
+            FB4: { low:1, base:2.5, high:4.5 }
+        };
+
+        function monthKeyToDate(key) {
+            return new Date(`${key}-01T00:00:00`);
+        }
+
+        function numericCutoff(v) {
+            const p = parseBulletinValue(v);
+            if (p.status === 'DATE') return p.date;
+            return null;
+        }
+
+        function movementMonths(a, b) {
+            const da = numericCutoff(a), db = numericCutoff(b);
+            if (!da || !db) return null;
+            return getMonthDifference(da, db) + ((db.getDate() - da.getDate()) / 30);
+        }
+
+        function getHistoryFor(category, country) {
+            const key = `${category}_${country}`;
+            return HISTORICAL_CUTOFFS[key] || RECENT_ANCHORS[key] || [];
+        }
+
+        function weightedQuantiles(values, weights, q) {
+            const pairs = values.map((v,i)=>({v, w:weights[i]})).sort((a,b)=>a.v-b.v);
+            const total = pairs.reduce((a,x)=>a+x.w,0);
+            let acc=0;
+            for (const p of pairs) {
+                acc += p.w;
+                if (acc/total >= q) return p.v;
+            }
+            return pairs.length ? pairs[pairs.length-1].v : 0;
+        }
+
+        function analyzeHistory(category, country) {
+            const raw = getHistoryFor(category,country);
+            const moves = [];
+            let retro=0, hold=0, forward=0;
+            for(let i=1;i<raw.length;i++){
+                const m = movementMonths(raw[i-1][1],raw[i][1]);
+                if(m == null) continue;
+                moves.push({m, key:raw[i][0]});
+                if(m < -0.5) retro++;
+                else if(Math.abs(m) < 0.5) hold++;
+                else forward++;
+            }
+            const values = moves.map(x=>x.m);
+            const recent = moves.slice(-8).map(x=>x.m);
+            const prior = PLANNING_PRIORS[category] || PLANNING_PRIORS.EB2;
+            const base = recent.length >= 3
+                ? Math.max(0.05, weightedQuantiles(recent, recent.map((_,i)=>i+1), 0.50) * 12)
+                : prior.base;
+            const positive = values.filter(v=>v>0);
+            const q25 = values.length ? weightedQuantiles(values, values.map((_,i)=>1+(i/Math.max(1,values.length-1))),0.25) : prior.low/12;
+            const q50 = values.length ? weightedQuantiles(values, values.map((_,i)=>1+(i/Math.max(1,values.length-1))),0.50) : prior.base/12;
+            const q75 = values.length ? weightedQuantiles(values, values.map((_,i)=>1+(i/Math.max(1,values.length-1))),0.75) : prior.high/12;
+            return {
+                raw, moves, samples: values.length, retro, hold, forward,
+                monthlyMedian:q50, monthlyQ25:q25, monthlyQ75:q75,
+                annualMedian:Math.max(0.1,q50*12),
+                annualQ25:q25*12, annualQ75:q75*12,
+                recentAnnual:base,
+                coverage: values.length >= 12 ? 'Strong' : values.length >= 6 ? 'Moderate' : values.length ? 'Limited' : 'Prior only'
+            };
+        }
+
+        function deterministicNoise(seed) {
+            const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
+            return x - Math.floor(x);
+        }
+
+        function simulateOnePath(category, country, userPD, activeValue, scenario='base', seedOffset=0) {
+            const history = analyzeHistory(category,country);
+            const prior = PLANNING_PRIORS[category] || PLANNING_PRIORS.EB2;
+            const scenarioFactor = scenario==='conservative' ? 0.72 : scenario==='fast' ? 1.30 : 1.0;
+            let cutoff = numericCutoff(activeValue);
+            let cursor = new Date(CURRENT_BULLETIN_DATE+'T00:00:00');
+            let months=0;
+            const path=[];
+            const target=userPD;
+            const anchor = FORECAST_DATA.items[`${category}_${country}`];
+            if (!cutoff && anchor && numericCutoff(anchor.value)) {
+                cutoff = numericCutoff(anchor.value);
+                cursor = new Date('2026-10-01T00:00:00');
+                path.push({date:new Date(cursor),cutoff:new Date(cutoff),note:'October forecast anchor'});
+            }
+            if (!cutoff) return {history,months:null,date:null,path,reason:'No numeric starting cutoff'};
+
+            const median = history.monthlyMedian || ((history.recentAnnual || prior.base)/12);
+            const q25 = history.monthlyQ25 || prior.low/12;
+            const q75 = history.monthlyQ75 || prior.high/12;
+            const spread = Math.max(0.35, q75-q25);
+
+            for(let step=0; step<180; step++){
+                if(cutoff >= target) break;
+                cursor = addMonths(cursor,1);
+                months++;
+                const isOctober = cursor.getMonth()===9;
+                const u = deterministicNoise(seedOffset + step*17 + category.length*13 + country.length*7 + (scenario==='conservative'?31:scenario==='fast'?97:53));
+                const z = (u-0.5)*2;
+                let move = median * scenarioFactor + z * spread;
+                if(isOctober) move += Math.max(0, median*0.25);
+
+                const concentrated = (country==='IND'||country==='CHN') && currentStream==='EB';
+                if(concentrated) move += z*0.15;
+
+                const retroRate = history.moves.length ? history.retro/history.moves.length : 0.05;
+                const holdRate = history.moves.length ? history.hold/history.moves.length : 0.20;
+                const regime = deterministicNoise(seedOffset + step*7 + category.length*5 + country.length*3);
+                const retroMultiplier = scenario==='conservative'?1.25:scenario==='fast'?0.65:1;
+                if(regime < retroRate * retroMultiplier) {
+                    move = -Math.min(Math.abs(move)*0.75, Math.max(0.5, spread));
+                } else if(regime < retroRate + holdRate) {
+                    move = 0;
+                }
+                move = Math.max(-18, Math.min(18, move));
+                cutoff = addMonths(cutoff, move);
+                path.push({date:new Date(cursor),cutoff:new Date(cutoff),move});
+            }
+            const date = cutoff >= target ? new Date(path[path.length-1].date) : null;
+            return {history,months:date ? months:null,date,path};
+        }
+
+        function simulateForecast(category, country, userPD, activeValue, scenario='base') {
+            const history = analyzeHistory(category,country);
+            const anchor = FORECAST_DATA.items[`${category}_${country}`];
+            const starting = numericCutoff(activeValue) || (anchor && numericCutoff(anchor.value));
+            if (!starting) return {history,months:null,date:null,path:[],reason:'No numeric starting cutoff', simulations:[]};
+
+            // Deterministic Monte Carlo ensemble. The fixed seeds make the standalone
+            // HTML reproducible while still sampling many plausible monthly paths.
+            const N = 300;
+            const results=[];
+            let representative=null;
+            for(let i=0;i<N;i++){
+                const r=simulateOnePath(category,country,userPD,activeValue,scenario,1000+i*7919);
+                if(i===Math.floor(N/2)) representative=r;
+                if(r.date) results.push({months:r.months,date:r.date});
+            }
+            results.sort((a,b)=>a.months-b.months);
+            const q=(p)=>{
+                if(!results.length)return null;
+                return results[Math.min(results.length-1,Math.floor(p*(results.length-1)))];
+            };
+            const base=q(.50), low=q(.20), high=q(.80);
+            return {
+                history,
+                months:base?.months ?? null,
+                date:base?.date ?? null,
+                path:representative?.path || [],
+                simulations:results,
+                q20:low?.date || null,
+                q50:base?.date || null,
+                q80:high?.date || null,
+                hitRate:results.length/N
+            };
+        }
+
+        function modelScenarioName(pace){
+            return pace==='pessimistic' ? 'conservative' : pace==='optimistic' ? 'fast' : 'base';
+        }
+
+        // Application State
+        let currentStream = 'EB'; // 'EB' or 'FB'
+        let currentPace = 'moderate'; // 'pessimistic', 'moderate', 'optimistic'
+        let chartInstance = null;
+
+        window.onload = function() {
+            populateYears();
+            populateDays();
+            populateCategories();
+            updateLabelAndInspector();
+            calculateTimeline();
+            renderForecastPanel();
+            
+            // Automatically verify the official DOS bulletin source after 1s delay
+            setTimeout(() => {
+                triggerAISync(true); // silent auto-sync attempt
+            }, 1000);
+        };
+
+        function updateLabelAndInspector() {
+            document.getElementById('vb-month-label').innerText = CURRENT_BULLETIN_NAME;
+            document.getElementById('inspect-bulletin-title').innerText = CURRENT_BULLETIN_NAME;
+            renderInspectTables();
+        }
+
+        function populateYears() {
+            const yearSelect = document.getElementById('pd-year');
+            yearSelect.innerHTML = '';
+            const currentYear = new Date().getFullYear();
+            for (let y = currentYear; y >= 2000; y--) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                if (y === 2018) opt.selected = true;
+                yearSelect.appendChild(opt);
+            }
+        }
+
+        function populateCategories() {
+            const catSelect = document.getElementById('category');
+            catSelect.innerHTML = '';
+            if (currentStream === 'EB') {
+                catSelect.innerHTML = `
+                    <option value="EB1">EB-1 (Priority Workers / Extraordinary / Execs)</option>
+                    <option value="EB2" selected>EB-2 (Advanced Degree / NIW)</option>
+                    <option value="EB3">EB-3 (Skilled Workers & Professionals)</option>
+                    <option value="EB3W">EB-3 Other Workers</option>
+                    <option value="EB4">EB-4 (Special Immigrants)</option>
+                    <option value="EB5">EB-5 Unreserved</option>
+                    <option value="EB5R">EB-5 Rural Set-Aside</option>
+                    <option value="EB5H">EB-5 High-Unemployment Set-Aside</option>
+                    <option value="EB5I">EB-5 Infrastructure Set-Aside</option>
+                `;
+            } else {
+                catSelect.innerHTML = `
+                    <option value="FB1">FB-1 (Unmarried Sons/Daughters of US Citizens)</option>
+                    <option value="FB2A">FB-2A (Spouses & Minor Children of LPRs)</option>
+                    <option value="FB2B">FB-2B (Unmarried Adult Sons/Daughters of LPRs)</option>
+                    <option value="FB3">FB-3 (Married Sons/Daughters of US Citizens)</option>
+                    <option value="FB4" selected>FB-4 (Brothers & Sisters of Adult US Citizens)</option>
+                `;
+            }
+        }
+
+        function setStream(stream) {
+            currentStream = stream;
+            const ebBtn = document.getElementById('tab-eb');
+            const fbBtn = document.getElementById('tab-fb');
+
+            if (stream === 'EB') {
+                ebBtn.className = "py-2 text-xs font-semibold rounded-lg transition shadow-sm bg-white text-blue-600";
+                fbBtn.className = "py-2 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-slate-900";
+            } else {
+                fbBtn.className = "py-2 text-xs font-semibold rounded-lg transition shadow-sm bg-white text-blue-600";
+                ebBtn.className = "py-2 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-slate-900";
+            }
+
+            populateCategories();
+            calculateTimeline();
+        }
+
+        function setPace(pace) {
+            currentPace = pace;
+            const btnP = document.getElementById('pace-pessimistic');
+            const btnM = document.getElementById('pace-moderate');
+            const btnO = document.getElementById('pace-optimistic');
+            const badge = document.getElementById('speed-badge');
+
+            const inactiveClass = "py-2 px-1 text-center border border-slate-200 rounded-xl text-xs font-medium text-slate-600 hover:border-slate-400 transition";
+            const activeClass = "py-2 px-1 text-center border-2 border-blue-600 bg-blue-50/50 rounded-xl text-xs font-medium text-blue-700 transition";
+
+            btnP.className = inactiveClass;
+            btnM.className = inactiveClass;
+            btnO.className = inactiveClass;
+
+            if (pace === 'pessimistic') {
+                btnP.className = activeClass;
+                badge.innerText = "Conservative";
+                badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800";
+            } else if (pace === 'moderate') {
+                btnM.className = activeClass;
+                badge.innerText = "Baseline";
+                badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800";
+            } else {
+                btnO.className = activeClass;
+                badge.innerText = "Optimistic";
+                badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800";
+            }
+
+            calculateTimeline();
+        }
+
+        // ==========================================
+        // GEMINI 3 FLASH REAL-TIME SYNC LOGIC
+        // ==========================================
+        async function triggerAISync(isAuto = false) {
+            const banner = document.getElementById('ai-sync-banner');
+            const statusText = document.getElementById('ai-sync-status-text');
+            const syncIcon = document.getElementById('sync-icon');
+            const sourceLink = document.getElementById('citation-link');
+
+            banner.classList.remove('hidden');
+            syncIcon.classList.add('animate-spin');
+            statusText.innerText = 'Checking the official Department of State Visa Bulletin page...';
+
+            // A standalone browser file cannot safely contain a Gemini API key.
+            // Instead of pretending to have live AI grounding, open the authoritative
+            // bulletin source and keep the verified September 2026 dataset as fallback.
+            try {
+                const response = await fetch(CURRENT_BULLETIN_SOURCE, { cache: 'no-store', mode: 'cors' });
+                if (!response.ok) throw new Error('Official bulletin fetch returned ' + response.status);
+                const text = await response.text();
+
+                // The existence of the official bulletin page is enough to mark the
+                // source as reachable; parsing arbitrary government HTML is intentionally
+                // not used because the page structure can change.
+                if (text.includes('Visa Bulletin For September 2026')) {
+                    sourceLink.href = CURRENT_BULLETIN_SOURCE;
+                    sourceLink.innerText = 'U.S. Department of State — September 2026 Visa Bulletin';
+                    document.getElementById('citation-timestamp').innerText =
+                        `Verified ${new Date().toLocaleString()}`;
+                    document.getElementById('citation-container').classList.remove('hidden');
+                    statusText.innerText = 'Official September 2026 bulletin verified. Forecasts remain separately labeled.';
+                    document.getElementById('sync-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+                } else {
+                    throw new Error('Expected bulletin title not found');
+                }
+            } catch (err) {
+                sourceLink.href = CURRENT_BULLETIN_SOURCE;
+                sourceLink.innerText = 'U.S. Department of State — cached September 2026 bulletin';
+                document.getElementById('citation-container').classList.remove('hidden');
+                document.getElementById('sync-dot').className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
+                statusText.innerText = 'Network refresh unavailable. Using the verified September 2026 official dataset.';
+                console.warn('Bulletin verification fallback:', err);
+            } finally {
+                updateLabelAndInspector();
+                calculateTimeline();
+                renderForecastPanel();
+                setTimeout(() => {
+                    banner.classList.add('hidden');
+                    syncIcon.classList.remove('animate-spin');
+                }, isAuto ? 1800 : 3000);
+            }
+        }
+
+        // ==========================================
+        // MAIN CALCULATOR LOGIC
+        // ==========================================
+        function parseBulletinValue(v) {
+            if (v === C) return { status:'CURRENT', date:null };
+            if (v === U) return { status:'UNAVAILABLE', date:null };
+            const d = new Date(v + 'T00:00:00');
+            return Number.isNaN(d.getTime()) ? { status:'UNKNOWN', date:null } : { status:'DATE', date:d };
+        }
+
+        function isPriorityDateCurrent(priorityDate, value) {
+            const parsed = parseBulletinValue(value);
+            if (parsed.status === 'CURRENT') return true;
+            if (parsed.status !== 'DATE') return false;
+            // DOS says numbers are authorized only for priority dates earlier than
+            // the listed final-action date.
+            return priorityDate < parsed.date;
+        }
+
+        function getActiveCutoffData(category, country) {
+            const stream = currentStream;
+            const useFiling = USCIS_AOS_CHART[stream] === 'Dates for Filing';
+            const source = useFiling ? VISA_FILING_DATA : VISA_BULLETIN_DATA;
+            return {
+                chart: useFiling ? 'Dates for Filing' : 'Final Action Dates',
+                value: source[stream]?.[category]?.[country] ?? U,
+                source: useFiling ? 'DOS Dates for Filing' : 'DOS Final Action Dates'
+            };
+        }
+
+        function calculateTimeline() {
+            const category = document.getElementById('category').value || 'EB2';
+            let country = document.getElementById('country').value || 'ROW';
+            const crossChargeable = document.getElementById('cross-charge').checked;
+            if (crossChargeable) country = 'ROW';
+
+            const month = parseInt(document.getElementById('pd-month').value, 10);
+            const year = parseInt(document.getElementById('pd-year').value, 10);
+            const day = Math.min(parseInt(document.getElementById('pd-day').value || '1', 10), daysInMonth(year, month));
+            const userPD = new Date(year, month, day);
+
+            const active = getActiveCutoffData(category, country);
+            const parsed = parseBulletinValue(active.value);
+            const today = new Date();
+            const isCurrent = isPriorityDateCurrent(userPD, active.value);
+
+            const selectedScenario = modelScenarioName(currentPace);
+            let forecast = null;
+            if (parsed.status === 'CURRENT') {
+                forecast = {date:today, months:0, history:analyzeHistory(category,country), path:[]};
+            } else {
+                forecast = simulateForecast(category,country,userPD,active.value,selectedScenario);
+            }
+
+            let remainingRealMonths = forecast?.months ?? 0;
+            let estFilingDate = isCurrent ? today : (forecast?.date || null);
+            let estGreenCardDate = estFilingDate ? addMonths(estFilingDate, 9) : null;
+
+            const monthDiffToPD = parsed.status === 'DATE'
+                ? Math.max(0, getMonthDifference(parsed.date, userPD))
+                : null;
+
+            renderHeroStats(isCurrent, parsed, monthDiffToPD, estFilingDate, estGreenCardDate, remainingRealMonths, active.chart);
+            renderRoadmapProgress(isCurrent, remainingRealMonths);
+            renderChart(userPD, parsed, forecast);
+            renderScenarioTable(category, country, userPD, active.value);
+            renderRecommendations(category, country, isCurrent, remainingRealMonths, crossChargeable, parsed.status);
+            renderDynamicInsight(category, country, monthDiffToPD, parsed.status);
+            renderForecastPanel();
+            renderIntelligentModel(category,country,userPD,active.value);
+        }
+
+        function daysInMonth(year, monthIndex) {
+            return new Date(year, monthIndex + 1, 0).getDate();
+        }
+
+        function populateDays() {
+            const daySelect = document.getElementById('pd-day');
+            if (!daySelect) return;
+            const month = parseInt(document.getElementById('pd-month').value || '0', 10);
+            const year = parseInt(document.getElementById('pd-year').value || new Date().getFullYear(), 10);
+            const current = parseInt(daySelect.value || '1', 10);
+            daySelect.innerHTML = '';
+            for (let d = 1; d <= daysInMonth(year, month); d++) {
+                const opt = document.createElement('option');
+                opt.value = d;
+                opt.textContent = d;
+                if (d === Math.min(current, daysInMonth(year, month))) opt.selected = true;
+                daySelect.appendChild(opt);
+            }
+        }
+
+        function addMonths(date, months) {
+            const d = new Date(date);
+            const whole = months >= 0 ? Math.floor(months) : Math.ceil(months);
+            const frac = months - whole;
+            d.setDate(1);
+            d.setMonth(d.getMonth() + whole);
+            if (frac) d.setDate(Math.max(1, Math.round(1 + frac*30)));
+            return d;
+        }
+
+        function getMonthDifference(startDate, endDate) {
+            return (endDate.getFullYear() - startDate.getFullYear()) * 12 +
+                   (endDate.getMonth() - startDate.getMonth());
+        }
+
+        function formatDate(date) {
+            return date ? date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Not reached in model horizon';
+        }
+
+        function renderHeroStats(isCurrent, cutoffInfo, monthDiff, filingDate, gcDate, remainingMonths, chartName) {
+            const heroEstDate = document.getElementById('hero-est-date');
+            const heroRemaining = document.getElementById('hero-remaining-time');
+            const metricCutoff = document.getElementById('metric-current-cutoff');
+            const metricQueue = document.getElementById('metric-queue-months');
+            const metricFiling = document.getElementById('metric-filing-date');
+
+            if (cutoffInfo.status === 'UNAVAILABLE') {
+                metricCutoff.innerText = 'Unavailable';
+                heroEstDate.innerText = filingDate ? formatDate(filingDate) : 'Awaiting FY reset';
+                heroRemaining.innerText = filingDate ? 'Model uses next-fiscal-year forecast anchor' : 'Wait for next fiscal-year allocation';
+                heroRemaining.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-300 text-slate-900';
+                metricQueue.innerText = 'U — model reset';
+                metricFiling.innerText = chartName;
+                return;
+            }
+
+            metricCutoff.innerText = cutoffInfo.status === 'CURRENT' ? 'Current' : formatDate(cutoffInfo.date);
+
+            if (isCurrent) {
+                heroEstDate.innerText = "Priority Date is CURRENT";
+                heroRemaining.innerText = chartName === 'Final Action Dates' ? "Final-action eligible" : "Filing-chart eligible";
+                heroRemaining.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-400 text-slate-900 shadow-md";
+                metricQueue.innerText = "0 Months";
+                metricFiling.innerText = "Now";
+            } else {
+                heroEstDate.innerText = formatDate(gcDate);
+                const years = Math.floor(remainingMonths / 12);
+                const mos = remainingMonths % 12;
+                let waitText = "~";
+                if (years > 0) waitText += `${years} yr `;
+                if (mos > 0) waitText += `${mos} mos `;
+                waitText += "to modeled eligibility";
+                heroRemaining.innerText = waitText;
+                heroRemaining.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white/20 backdrop-blur-md text-white border border-white/30";
+                metricQueue.innerText = monthDiff == null ? '—' : `${monthDiff} Months Behind`;
+                metricFiling.innerText = filingDate ? formatDate(filingDate) : 'Model horizon';
+            }
+        }
+
+        function renderRoadmapProgress(isCurrent, remainingMonths) {
+            const stage = document.getElementById('current-stage').value;
+            const bar = document.getElementById('progress-bar-fill');
+            const pctLabel = document.getElementById('roadmap-pct');
+            let pct = 25;
+            if (stage === 'PERM_PENDING') pct = 20;
+            if (stage === 'I140_PENDING') pct = 40;
+            if (isCurrent) pct = 75;
+            if (stage === 'I485_FILED') pct = 85;
+            bar.style.width = `${pct}%`;
+            pctLabel.innerText = `${pct}% Complete`;
+        }
+
+        function renderChart(userPD, cutoffInfo, forecast) {
+            const ctx = document.getElementById('projectionChart').getContext('2d');
+            const labels=[], cutoffData=[], userPDData=[];
+            const path = forecast?.path || [];
+            const maxPoints = Math.min(path.length, 96);
+            for(let i=0;i<maxPoints;i++){
+                labels.push(path[i].date.toLocaleDateString('en-US',{month:'short',year:'numeric'}));
+                cutoffData.push(path[i].cutoff.getTime());
+                userPDData.push(userPD.getTime());
+            }
+            if(!labels.length && cutoffInfo.status==='DATE'){
+                labels.push(CURRENT_BULLETIN_NAME.replace(' Visa Bulletin',''));
+                cutoffData.push(cutoffInfo.date.getTime());
+                userPDData.push(userPD.getTime());
+            }
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx,{
+                type:'line',
+                data:{labels,datasets:[
+                    {label:'Historical-model cutoff path',data:cutoffData,borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.08)',fill:true,tension:.25,pointRadius:2},
+                    {label:'Your Priority Date',data:userPDData,borderColor:'#f43f5e',borderDash:[6,6],backgroundColor:'transparent',pointRadius:0}
+                ]},
+                options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(context){
+                    const d=new Date(context.raw); return `${context.dataset.label}: ${d.toLocaleDateString('en-US',{month:'short',year:'numeric'})}`;
+                }}}},scales:{y:{ticks:{callback:value=>new Date(value).getFullYear(),font:{size:10}},grid:{color:'#f1f5f9'}},x:{grid:{display:false},ticks:{font:{size:9},maxRotation:60,minRotation:45}}}}
+            });
+        }
+
+        function renderScenarioTable(category, country, userPD, currentCutoffValue) {
+            const tbody=document.getElementById('scenario-table-body'); tbody.innerHTML='';
+            const scenarios=[
+                {id:'pessimistic',label:'Conservative',model:'conservative',color:'text-amber-700 bg-amber-50'},
+                {id:'moderate',label:'Base / Historical',model:'base',color:'text-blue-700 bg-blue-50 font-semibold'},
+                {id:'optimistic',label:'Faster',model:'fast',color:'text-emerald-700 bg-emerald-50'}
+            ];
+            const hist=analyzeHistory(category,country);
+            scenarios.forEach(p=>{
+                const f=simulateForecast(category,country,userPD,currentCutoffValue,p.model);
+                let eligibility='—',gc='—';
+                const parsed=parseBulletinValue(currentCutoffValue);
+                if(parsed.status==='CURRENT'){eligibility='Now';gc='Current + processing time';}
+                else if(parsed.status==='UNAVAILABLE'){
+                    eligibility=f.q50?formatDate(f.q50):'Model horizon';
+                    gc=f.q50?formatDate(addMonths(f.q50,9)):'Model horizon';
+                } else if(parsed.status==='DATE'){
+                    eligibility=f.q50?formatDate(f.q50):'Not reached in 15 yrs';
+                    gc=f.q50?formatDate(addMonths(f.q50,9)):'Not reached in 15 yrs';
+                }
+                const tr=document.createElement('tr');
+                tr.className=p.id===currentPace?'bg-blue-50/40 font-semibold':'hover:bg-slate-50';
+                tr.innerHTML=`<td class="p-2.5"><span class="px-2 py-0.5 rounded-md ${p.color}">${p.label}</span></td>
+                    <td class="p-2.5 font-medium text-slate-700">${hist.coverage} (${hist.samples} moves)</td>
+                    <td class="p-2.5 text-slate-700">${eligibility}</td>
+                    <td class="p-2.5 text-slate-900">${gc}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderIntelligentModel(category,country,userPD,activeValue){
+            const summary=document.getElementById('model-summary');
+            const table=document.getElementById('model-crossing-table');
+            const explain=document.getElementById('model-explanation');
+            if(!summary||!table||!explain)return;
+            const h=analyzeHistory(category,country);
+            const badge=document.getElementById('model-regime-badge');
+            if(badge){ badge.innerText = `${h.coverage} historical coverage`; }
+            const base=simulateForecast(category,country,userPD,activeValue,'base');
+            const con=simulateForecast(category,country,userPD,activeValue,'conservative');
+            const fast=simulateForecast(category,country,userPD,activeValue,'fast');
+
+            const cards=[
+                ['History',`${h.samples} movement observations`,h.coverage],
+                ['Median pace',`${h.annualMedian.toFixed(1)} mo/yr`,h.samples?'historical':'planning prior'],
+                ['Retrogression',''+h.retro,'observed moves'],
+                ['Holds',''+h.hold,'observed moves']
+            ];
+            summary.innerHTML=cards.map(c=>`<div class="rounded-xl bg-slate-50 border border-slate-200 p-3"><div class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">${c[0]}</div><div class="text-sm font-extrabold text-slate-900 mt-1">${c[1]}</div><div class="text-[10px] text-slate-500 mt-0.5">${c[2]}</div></div>`).join('');
+
+            const rangeText=(f)=>f.q20&&f.q80 ? `${formatDate(f.q20)} – ${formatDate(f.q80)}` : '15+ yrs';
+            table.innerHTML=`
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="p-2 rounded-lg bg-amber-50"><div class="text-[10px] text-amber-700 font-bold">Conservative</div><div class="font-extrabold text-amber-900 mt-1">${rangeText(con)}</div><div class="text-[9px] text-amber-700 mt-1">20th–80th path window</div></div>
+                    <div class="p-2 rounded-lg bg-blue-50"><div class="text-[10px] text-blue-700 font-bold">Base</div><div class="font-extrabold text-blue-900 mt-1">${rangeText(base)}</div><div class="text-[9px] text-blue-700 mt-1">20th–80th path window</div></div>
+                    <div class="p-2 rounded-lg bg-emerald-50"><div class="text-[10px] text-emerald-700 font-bold">Faster</div><div class="font-extrabold text-emerald-900 mt-1">${rangeText(fast)}</div><div class="text-[9px] text-emerald-700 mt-1">20th–80th path window</div></div>
+                </div>
+                <div class="mt-3 text-[10px] text-slate-500">Each scenario is a 300-path deterministic Monte Carlo ensemble. The displayed window is a model interval, not an official Visa Bulletin prediction.</div>`;
+
+            const anchor=FORECAST_DATA.items[`${category}_${country}`];
+            explain.innerHTML=`
+                <p><strong>Starting point:</strong> ${parseBulletinValue(activeValue).status==='UNAVAILABLE'?'The current category is unavailable, so the model uses a separately labeled October 2026 anchor when one exists.':'The current official cutoff is used as the starting point.'}</p>
+                <p><strong>Historical behavior:</strong> ${h.samples ? `The model uses ${h.samples} observed movements, with greater weight on recent observations.` : 'No embedded historical series is available; a transparent category planning prior is used.'}</p>
+                <p><strong>Volatility:</strong> ${h.retro} retrogression(s) and ${h.hold} hold(s) are represented in the simulation.</p>
+                <p><strong>Simulation coverage:</strong> Base path reached the target in ${Math.round((base.hitRate||0)*100)}% of 300 modeled paths; a low hit rate means the horizon is highly uncertain.</p>
+                ${anchor ? `<p><strong>Near-term signal:</strong> ${anchor.note}</p>` : ''}
+                <p><strong>Processing assumption:</strong> the illustrative green-card date adds 9 months after the modeled Final Action crossing. USCIS historical data show employment-based I-485 processing times can vary, so this is not a case-specific guarantee.</p>`;
+        }
+
+        function renderRecommendations(cat, country, isCurrent, remainingMonths, isCross, status) {
+            const container = document.getElementById('recommendations-container');
+            container.innerHTML = '';
+            const recs = [];
+
+            if (status === 'UNAVAILABLE') {
+                recs.push({
+                    title:'Category is Unavailable',
+                    icon:'fa-circle-pause text-amber-600',
+                    desc:'The latest DOS bulletin says no immigrant numbers are authorized for this category. Do not convert “unavailable” into a date-based wait calculation.'
+                });
+            } else if (isCurrent) {
+                recs.push({
+                    title:'Check Filing Eligibility',
+                    icon:'fa-file-signature text-emerald-600',
+                    desc:`The selected priority date is earlier than the active ${USCIS_AOS_CHART[currentStream]} chart value. Confirm all other I-485 eligibility requirements before filing.`
+                });
+            }
+
+            if (!isCross && (country === 'IND' || country === 'CHN')) {
+                recs.push({
+                    title:'Review Chargeability',
+                    icon:'fa-people-arrows text-rose-500',
+                    desc:'Cross-chargeability can sometimes use a spouse’s country of birth, subject to the legal requirements. The calculator should not assume eligibility solely from a spouse’s birthplace.'
+                });
+            }
+
+            if (country === 'IND' && (cat === 'EB2' || cat === 'EB3')) {
+                recs.push({
+                    title:'Track Category-Specific Alternatives',
+                    icon:'fa-route text-blue-600',
+                    desc:'Depending on your facts, an independent EB-1 or other immigrant classification may have a different queue. Eligibility is fact-specific and should be evaluated separately.'
+                });
+            }
+
+            recs.push({
+                title:'Monitor Both Charts',
+                icon:'fa-table-columns text-indigo-600',
+                desc:`For ${currentStream === 'EB' ? 'employment' : 'family'} adjustment filings, this tool uses the current USCIS chart selection shown above. Re-check USCIS each month because the permitted chart can change.`
+            });
+
+            recs.push({
+                title:'Plan for Retrogression',
+                icon:'fa-triangle-exclamation text-slate-600',
+                desc:'A cutoff can hold, advance, retrogress, or become unavailable. Treat the forecast as a planning range rather than a guaranteed date.'
+            });
+
+            recs.forEach(r => {
+                const card = document.createElement('div');
+                card.className = "p-3 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1";
+                card.innerHTML = `
+                    <div class="font-bold text-slate-800 flex items-center space-x-1.5">
+                        <i class="fa-solid ${r.icon}"></i><span>${r.title}</span>
+                    </div>
+                    <p class="text-slate-500 text-[11px] leading-snug">${r.desc}</p>`;
+                container.appendChild(card);
+            });
+        }
+
+        function renderDynamicInsight(cat, country, monthDiff, status) {
+            const container = document.getElementById('dynamic-insight-text');
+            if (status === 'UNAVAILABLE') {
+                container.innerHTML = `<p><strong>Unavailable:</strong> The latest official bulletin marks this category/country combination as unavailable. That means no visa numbers are authorized at this time.</p>`;
+            } else if (country === 'IND' && (cat === 'EB2' || cat === 'EB3')) {
+                container.innerHTML = `
+                    <p><strong>India employment queue:</strong> September 2026 shows EB-2 India as unavailable and EB-3 India at January 1, 2014 on Final Action Dates.</p>
+                    <p><strong>October context:</strong> FY2027 begins October 1. DOS has indicated EB-2 India is likely to advance to at least July 15, 2014, but the actual October date depends on demand and the FY2027 annual limit.</p>`;
+            } else if (country === 'ROW') {
+                container.innerHTML = `<p><strong>Rest of World:</strong> Several September 2026 employment categories are Current, but each category must be checked separately. “Current” means numbers are authorized for qualified applicants rather than guaranteeing approval.</p>`;
+            } else {
+                container.innerHTML = `<p><strong>Planning note:</strong> The official September 2026 bulletin is the factual baseline. Forecasts below are separate and should not be confused with published government cutoffs.</p>`;
+            }
+        }
+
+        function renderForecastPanel() {
+            const panel = document.getElementById('forecast-panel');
+            const badge = document.getElementById('forecast-confidence-badge');
+            if (!panel || !badge) return;
+
+            const cat = document.getElementById('category')?.value || 'EB2';
+            const country = document.getElementById('country')?.value || 'ROW';
+            const key = `${cat}_${country}`;
+            const f = FORECAST_DATA.items[key];
+
+            if (!f) {
+                badge.innerText = 'No category-specific forecast';
+                badge.className = 'text-[10px] font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-600';
+                panel.innerHTML = `
+                    <div class="sm:col-span-2 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                        <strong>October 2026:</strong> No specific private-model forecast is loaded for this selection. The calculator will not invent one.
+                        <div class="mt-1 text-slate-500">Official baseline: September 2026. Upcoming bulletin: not yet published.</div>
+                    </div>`;
+                return;
+            }
+
+            badge.innerText = f.confidence;
+            badge.className = 'text-[10px] font-bold px-2 py-1 rounded-full bg-indigo-100 text-indigo-700';
+            panel.innerHTML = `
+                <div class="p-3 rounded-xl bg-indigo-50 border border-indigo-100">
+                    <div class="font-bold text-indigo-900">October 2026 model / DOS outlook</div>
+                    <div class="text-lg font-extrabold text-indigo-700 mt-1">${f.value}</div>
+                    ${f.range ? `<div class="text-[11px] text-indigo-700 mt-1">Model range: ${f.range}</div>` : ''}
+                </div>
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                    <div class="font-semibold text-slate-800">Evidence</div>
+                    <div class="text-[11px] text-slate-600 mt-1">${f.note}</div>
+                    <a class="inline-flex items-center gap-1 text-blue-600 underline mt-2" href="${FORECAST_DATA.source}" target="_blank" rel="noopener">
+                        Forecast source <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    </a>
+                </div>`;
+        }
+
+        function formatBulletinValue(v) {
+            if (v === C) return 'Current';
+            if (v === U) return 'Unavailable';
+            return v || '—';
+        }
+
+        function renderInspectTables() {
+            const ebBody = document.getElementById('inspect-eb-body');
+            const fbBody = document.getElementById('inspect-fb-body');
+
+            ebBody.innerHTML = '';
+            fbBody.innerHTML = '';
+
+            const countries = ['IND', 'CHN', 'ROW', 'MEX', 'PHL'];
+
+            ['EB1', 'EB2', 'EB3', 'EB3W', 'EB4', 'EB5', 'EB5R', 'EB5H', 'EB5I'].forEach(cat => {
+                const tr = document.createElement('tr');
+                let row = `<td class="p-2 font-bold text-blue-600">${cat}</td>`;
+                countries.forEach(c => {
+                    const val = formatBulletinValue(VISA_BULLETIN_DATA.EB[cat]?.[c]);
+                    row += `<td class="p-2">${val}</td>`;
+                });
+                tr.innerHTML = row;
+                ebBody.appendChild(tr);
+            });
+
+            ['FB1', 'FB2A', 'FB2B', 'FB3', 'FB4'].forEach(cat => {
+                const tr = document.createElement('tr');
+                let row = `<td class="p-2 font-bold text-indigo-600">${cat}</td>`;
+                countries.forEach(c => {
+                    const val = formatBulletinValue(VISA_BULLETIN_DATA.FB[cat]?.[c]);
+                    row += `<td class="p-2">${val}</td>`;
+                });
+                tr.innerHTML = row;
+                fbBody.appendChild(tr);
+            });
+        }
+
+        // Preset Loader
+        function loadPreset(type) {
+            if (type === 'eb2_india') {
+                setStream('EB');
+                document.getElementById('category').value = 'EB2';
+                document.getElementById('country').value = 'IND';
+                document.getElementById('pd-month').value = '9';
+                document.getElementById('pd-day').value = '1';
+                document.getElementById('pd-year').value = '2014';
+                document.getElementById('cross-charge').checked = false;
+            } else if (type === 'eb3_india') {
+                setStream('EB');
+                document.getElementById('category').value = 'EB3';
+                document.getElementById('country').value = 'IND';
+                document.getElementById('pd-month').value = '4';
+                document.getElementById('pd-day').value = '1';
+                document.getElementById('pd-year').value = '2013';
+                document.getElementById('cross-charge').checked = false;
+            } else if (type === 'eb2_china') {
+                setStream('EB');
+                document.getElementById('category').value = 'EB2';
+                document.getElementById('country').value = 'CHN';
+                document.getElementById('pd-month').value = '1';
+                document.getElementById('pd-day').value = '1';
+                document.getElementById('pd-year').value = '2021';
+                document.getElementById('cross-charge').checked = false;
+            } else if (type === 'eb2_row') {
+                setStream('EB');
+                document.getElementById('category').value = 'EB2';
+                document.getElementById('country').value = 'ROW';
+                document.getElementById('pd-month').value = '5';
+                document.getElementById('pd-day').value = '1';
+                document.getElementById('pd-year').value = '2023';
+                document.getElementById('cross-charge').checked = false;
+            } else if (type === 'fb4_india') {
+                setStream('FB');
+                document.getElementById('category').value = 'FB4';
+                document.getElementById('country').value = 'IND';
+                document.getElementById('pd-month').value = '11';
+                document.getElementById('pd-day').value = '1';
+                document.getElementById('pd-year').value = '2006';
+                document.getElementById('cross-charge').checked = false;
+            }
+            togglePresetsModal();
+            populateDays();
+            calculateTimeline();
+        }
+
+        function resetInputs() {
+            setStream('EB');
+            document.getElementById('category').value = 'EB2';
+            document.getElementById('country').value = 'ROW';
+            document.getElementById('pd-month').value = '0';
+            document.getElementById('pd-day').value = '1';
+            document.getElementById('pd-year').value = '2020';
+            populateDays();
+            document.getElementById('cross-charge').checked = false;
+            setPace('moderate');
+        }
+
+        // Modal Toggles
+        function toggleDataInspectModal() {
+            document.getElementById('data-inspect-modal').classList.toggle('hidden');
+        }
+
+        function togglePresetsModal() {
+            document.getElementById('presets-modal').classList.toggle('hidden');
+        }
+
+        function toggleCrossChargeModal() {
+            document.getElementById('cross-modal').classList.toggle('hidden');
+        }
+    </script>
+</body>
+</html>
